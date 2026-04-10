@@ -1,20 +1,42 @@
-import random
-from fastmcp import FastMCP
 
-mcp = FastMCP(name="DemoServer")
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI(title="Simple MCP Tool")
+
+# -----------------------------
+# Request Model
+# -----------------------------
+class AddRequest(BaseModel):
+    a: int
+    b: int
 
 
-@mcp.tool()
-def roll_dice(n_dice: int = 1) -> list[int]:
-    """Roll n_dice 6-sided dice and return results"""
-    return [random.randint(1, 6) for _ in range(n_dice)]
-
-
-@mcp.tool()
-def add_number(a: float, b: float) -> float:
-    """Add 2 numbers"""
+# -----------------------------
+# Tool Function
+# -----------------------------
+def add_numbers(a: int, b: int) -> int:
     return a + b
 
 
-if __name__ == "__main__":
-    mcp.run()
+# -----------------------------
+# MCP-style Endpoint
+# -----------------------------
+@app.post("/tools/add")
+def run_add_tool(request: AddRequest):
+    result = add_numbers(request.a, request.b)
+
+    return {
+        "tool": "add_numbers",
+        "input": request.dict(),
+        "output": result,
+        "status": "success"
+    }
+
+
+# -----------------------------
+# Health Check
+# -----------------------------
+@app.get("/")
+def root():
+    return {"message": "MCP Tool Running"}
