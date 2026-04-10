@@ -1,27 +1,30 @@
 from prefect import flow, task
-
+from Program_Tool import ProgramTool
+from dotenv import load_dotenv
+import os
 # -----------------------------
 # Tool Logic (same as before)
 # -----------------------------
+# Load env variables
+load_dotenv()
+
 @task
-def add_numbers(a: int, b: int) -> int:
-    return a + b
+def fetch_program(program_id: int):
+    print(f"🔍 Fetching program {program_id}")
+
+    api_key = os.getenv("FLEX_API_KEY")
+
+    tool = ProgramTool(api_key)
+    result = tool.get_program(program_id)
+
+    print("✅ API Response:", result)
+    return result
 
 
-# -----------------------------
-# Prefect Flow (entrypoint)
-# -----------------------------
-@flow(name="mcp-add-tool-flow")
-def run_add_tool(a: int = 1, b: int = 2):
-    result = add_numbers(a, b)
-
-    return {
-        "tool": "add_numbers",
-        "input": {"a": a, "b": b},
-        "output": result,
-        "status": "success"
-    }
+@flow
+def run_program_flow(program_id: int = 127):
+    return fetch_program(program_id)
 
 
 if __name__ == "__main__":
-    print(run_add_tool(5, 7))
+    print(run_program_flow(127))

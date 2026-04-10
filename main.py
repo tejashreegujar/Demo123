@@ -1,33 +1,53 @@
-
 from fastapi import FastAPI
 from pydantic import BaseModel
+import requests
+import os
+from dotenv import load_dotenv
 
 app = FastAPI(title="Simple MCP Tool")
+
+# Load environment variables
+load_dotenv()
+API_KEY = os.getenv("FLEX_API_KEY")
+
 
 # -----------------------------
 # Request Model
 # -----------------------------
-class AddRequest(BaseModel):
-    a: int
-    b: int
+class ProgramRequest(BaseModel):
+    program_id: int
 
 
 # -----------------------------
-# Tool Function
+# Tool Class
 # -----------------------------
-def add_numbers(a: int, b: int) -> int:
-    return a + b
+class ProgramTool:
+    def __init__(self, api_key):
+        self.base_url = "http://iapi.dev.flexoffers.com/agents/v1/programs"
+        self.headers = {
+            "x-api-key": api_key,
+            "Content-Type": "application/json"
+        }
+
+    def get_program(self, program_id):
+        url = f"{self.base_url}/{program_id}"
+        response = requests.get(url, headers=self.headers)
+        return response.json()
+
+
+# Initialize tool
+tool = ProgramTool(API_KEY)
 
 
 # -----------------------------
 # MCP-style Endpoint
 # -----------------------------
-@app.post("/tools/add")
-def run_add_tool(request: AddRequest):
-    result = add_numbers(request.a, request.b)
+@app.post("/tools/get_program")
+def get_program_endpoint(request: ProgramRequest):
+    result = tool.get_program(request.program_id)
 
     return {
-        "tool": "add_numbers",
+        "tool": "get_program",
         "input": request.dict(),
         "output": result,
         "status": "success"
